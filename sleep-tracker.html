@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sleep & taper tracker</title>
+<style>
+  :root{
+    --bg:#F7F4EE;
+    --surface:#FFFFFF;
+    --ink:#2C2C2A;
+    --ink-soft:#5F5E5A;
+    --ink-faint:#888780;
+    --line:#E3DFD3;
+    --accent:#0F6E56;
+    --accent-soft:#E1F5EE;
+    --accent-strong:#085041;
+    --amber:#BA7517;
+    --amber-soft:#FAEEDA;
+    --red:#A32D2D;
+    --red-soft:#FCEBEB;
+    --radius:14px;
+    --radius-sm:8px;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1B1A17;
+      --surface:#262420;
+      --ink:#F1EFE8;
+      --ink-soft:#B4B2A9;
+      --ink-faint:#888780;
+      --line:#3A372F;
+      --accent:#5DCAA5;
+      --accent-soft:#04342C;
+      --accent-strong:#9FE1CB;
+      --amber:#FAC775;
+      --amber-soft:#412402;
+      --red:#F09595;
+      --red-soft:#501313;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    max-width:480px;
+    margin:0 auto;
+    padding:0 0 90px;
+    min-height:100vh;
+  }
+  header.top{
+    padding:28px 20px 18px;
+    border-bottom:1px solid var(--line);
+    background:var(--surface);
+  }
+  header.top .eyebrow{
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--accent);
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  header.top h1{
+    font-family:var(--font-display);
+    font-size:26px;
+    font-weight:600;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  header.top .sub{
+    margin:6px 0 0;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+
+  nav.tabs{
+    display:flex;
+    position:sticky;
+    top:0;
+    z-index:10;
+    background:var(--surface);
+    border-bottom:1px solid var(--line);
+    overflow-x:auto;
+    -ms-overflow-style:none;
+    scrollbar-width:none;
+  }
+  nav.tabs::-webkit-scrollbar{display:none;}
+  nav.tabs button{
+    flex:0 0 auto;
+    padding:14px 16px;
+    background:none;
+    border:none;
+    font-family:var(--font-body);
+    font-size:13px;
+    font-weight:500;
+    color:var(--ink-faint);
+    border-bottom:2px solid transparent;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  nav.tabs button.active{
+    color:var(--accent-strong);
+    border-bottom-color:var(--accent);
+  }
+
+  main{padding:20px;}
+  section.panel{display:none;}
+  section.panel.active{display:block;}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:14px;
+  }
+  .card h2{
+    font-family:var(--font-display);
+    font-size:18px;
+    font-weight:600;
+    margin:0 0 14px;
+  }
+  .card h3{
+    font-size:14px;
+    font-weight:600;
+    margin:0 0 10px;
+    color:var(--ink);
+  }
+  .field{
+    margin-bottom:14px;
+  }
+  .field:last-child{margin-bottom:0;}
+  .field label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .field .hint{
+    font-size:12px;
+    color:var(--ink-faint);
+    margin-top:4px;
+  }
+  input[type="time"],
+  input[type="number"],
+  input[type="date"],
+  input[type="text"],
+  select,
+  textarea{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:var(--radius-sm);
+    background:var(--bg);
+    color:var(--ink);
+    font-size:15px;
+    font-family:var(--font-body);
+  }
+  textarea{resize:vertical; min-height:60px;}
+  input:focus, select:focus, textarea:focus{
+    outline:2px solid var(--accent);
+    outline-offset:1px;
+  }
+
+  .row2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+
+  .slider-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .slider-row input[type="range"]{
+    flex:1;
+    -webkit-appearance:none;
+    height:4px;
+    border-radius:2px;
+    background:var(--line);
+  }
+  .slider-row input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:20px;height:20px;border-radius:50%;
+    background:var(--accent);
+    cursor:pointer;
+  }
+  .slider-row input[type="range"]::-moz-range-thumb{
+    width:20px;height:20px;border-radius:50%;
+    background:var(--accent);
+    border:none;
+    cursor:pointer;
+  }
+  .slider-out{
+    min-width:44px;
+    text-align:right;
+    font-weight:600;
+    font-size:15px;
+    font-family:var(--font-display);
+  }
+
+  .mood-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:6px;
+  }
+  .mood-opt{
+    border:1px solid var(--line);
+    border-radius:var(--radius-sm);
+    background:var(--bg);
+    padding:10px 4px;
+    text-align:center;
+    cursor:pointer;
+    font-size:20px;
+    line-height:1;
+  }
+  .mood-opt.selected{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .mood-opt .lbl{
+    display:block;
+    font-size:10px;
+    margin-top:4px;
+    color:var(--ink-faint);
+    font-weight:500;
+  }
+
+  button.primary{
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:var(--radius-sm);
+    background:var(--accent);
+    color:var(--surface);
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:var(--font-body);
+  }
+  button.primary:active{transform:scale(0.99);}
+  button.secondary{
+    width:100%;
+    padding:12px;
+    border:1px solid var(--line);
+    border-radius:var(--radius-sm);
+    background:var(--surface);
+    color:var(--ink);
+    font-size:14px;
+    font-weight:500;
+    cursor:pointer;
+    font-family:var(--font-body);
+  }
+  .stack{display:flex; flex-direction:column; gap:10px;}
+
+  .status-banner{
+    padding:6px 0;
+    font-size:13px;
+    color:var(--ink-faint);
+    text-align:center;
+    min-height:20px;
+  }
+
+  .entries-list{display:flex; flex-direction:column; gap:10px;}
+  .entry{
+    border:1px solid var(--line);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+    background:var(--bg);
+  }
+  .entry .entry-date{
+    font-family:var(--font-display);
+    font-size:15px;
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  .entry .entry-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    color:var(--ink-soft);
+    padding:2px 0;
+  }
+  .entry .entry-row span:last-child{
+    color:var(--ink);
+    font-weight:500;
+  }
+  .badge{
+    display:inline-block;
+    font-size:11px;
+    font-weight:600;
+    padding:2px 8px;
+    border-radius:99px;
+    background:var(--accent-soft);
+    color:var(--accent-strong);
+    margin-left:6px;
+  }
+  .badge.amber{background:var(--amber-soft); color:var(--amber);}
+  .badge.red{background:var(--red-soft); color:var(--red);}
+
+  .empty{
+    text-align:center;
+    padding:30px 16px;
+    color:var(--ink-faint);
+    font-size:14px;
+  }
+
+  .stats-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .stat{
+    background:var(--bg);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+  }
+  .stat .stat-label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--ink-faint);
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .stat .stat-value{
+    font-family:var(--font-display);
+    font-size:22px;
+    font-weight:600;
+  }
+  .stat .stat-value.small{font-size:16px;}
+
+  .phase-card{
+    border-radius:var(--radius);
+    padding:16px;
+    margin-bottom:12px;
+    border:1px solid var(--line);
+  }
+  .phase-card.current{
+    border:1.5px solid var(--accent);
+    background:var(--accent-soft);
+  }
+  .phase-card .phase-num{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    font-weight:700;
+    color:var(--accent);
+    margin-bottom:4px;
+  }
+  .phase-card.current .phase-num{color:var(--accent-strong);}
+  .phase-card h3{margin:0 0 6px;}
+  .phase-card ul{
+    margin:8px 0 0;
+    padding-left:18px;
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+  .phase-card .weeks{
+    font-size:12px;
+    color:var(--ink-faint);
+    margin-bottom:2px;
+  }
+
+  .ref-section{
+    margin-bottom:18px;
+  }
+  .ref-section h3{
+    font-family:var(--font-display);
+    font-size:16px;
+    margin:0 0 8px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--line);
+  }
+  .ref-section ul{
+    margin:0;
+    padding-left:18px;
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink-soft);
+  }
+  .ref-section ul li strong{color:var(--ink);}
+  .ref-section p{
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink-soft);
+    margin:0 0 8px;
+  }
+
+  .toggle-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+    font-size:14px;
+  }
+  .toggle-row:last-child{border-bottom:none;}
+  .toggle-row .toggle-meta{color:var(--ink-faint); font-size:12px;}
+  .switch{
+    position:relative;
+    width:42px;height:24px;
+    flex:0 0 auto;
+  }
+  .switch input{opacity:0;width:0;height:0;}
+  .switch .slider{
+    position:absolute; inset:0;
+    background:var(--line);
+    border-radius:99px;
+    transition:0.15s;
+    cursor:pointer;
+  }
+  .switch .slider:before{
+    content:"";
+    position:absolute;
+    width:18px;height:18px;
+    left:3px; top:3px;
+    background:var(--surface);
+    border-radius:50%;
+    transition:0.15s;
+  }
+  .switch input:checked + .slider{background:var(--accent);}
+  .switch input:checked + .slider:before{transform:translateX(18px);}
+
+  .sr-only{
+    position:absolute;
+    width:1px;height:1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h2 class="sr-only">Personal sleep tracking app with a daily log, taper progress charts, taper schedule, and a reference page of sleep recommendations.</h2>
+
+  <header class="top">
+    <p class="eyebrow">Sleep recovery</p>
+    <h1>Night log</h1>
+    <p class="sub">Track sleep, dosing and the cannabis taper in one place.</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="log">Log entry</button>
+    <button class="tab-btn" data-tab="history">History</button>
+    <button class="tab-btn" data-tab="taper">Taper plan</button>
+    <button class="tab-btn" data-tab="reference">Reference</button>
+  </nav>
+
+  <main>
+
+    <!-- LOG ENTRY -->
+    <section class="panel active" id="panel-log">
+      <div class="card">
+        <h2>Last night</h2>
+
+        <div class="field">
+          <label for="logDate">Date (morning of)</label>
+          <input type="date" id="logDate">
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="bedTime">Bed time</label>
+            <input type="time" id="bedTime">
+          </div>
+          <div class="field">
+            <label for="wakeTime">Wake time</label>
+            <input type="time" id="wakeTime">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="sleepOnset">Time to fall asleep (minutes)</label>
+          <input type="number" id="sleepOnset" min="0" max="240" placeholder="e.g. 25">
+        </div>
+
+        <div class="field">
+          <label for="awakenings">Number of awakenings</label>
+          <input type="number" id="awakenings" min="0" max="20" placeholder="e.g. 1">
+        </div>
+
+        <div class="field">
+          <label for="longestBlock">Longest unbroken sleep block (hours)</label>
+          <input type="number" id="longestBlock" min="0" max="14" step="0.25" placeholder="e.g. 5">
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Cannabis dosing</h2>
+        <div class="field">
+          <label for="doseBedtime">Cones before bed</label>
+          <div class="slider-row">
+            <input type="range" id="doseBedtime" min="0" max="6" step="0.5" value="4">
+            <span class="slider-out" id="doseBedtimeOut">4</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="doseMidsleep">Cones at mid-sleep wake</label>
+          <div class="slider-row">
+            <input type="range" id="doseMidsleep" min="0" max="6" step="0.5" value="0">
+            <span class="slider-out" id="doseMidsleepOut">0</span>
+          </div>
+          <p class="hint">Set to 0 on nights with no redose.</p>
+        </div>
+        <div class="field">
+          <label for="cbdUsed">CBD-dominant dose used?</label>
+          <select id="cbdUsed">
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="substitution">Redose substitution tried (if any)</label>
+          <select id="substitution">
+            <option value="none">None</option>
+            <option value="melatonin">Melatonin (0.5-1mg)</option>
+            <option value="breathing">Breathing / PMR</option>
+            <option value="melatonin+breathing">Melatonin + breathing</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Morning check-in</h2>
+        <div class="field">
+          <label for="energy">Energy level</label>
+          <div class="slider-row">
+            <input type="range" id="energy" min="0" max="100" step="5" value="50">
+            <span class="slider-out" id="energyOut">50%</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Mood</label>
+          <div class="mood-grid" id="moodGrid">
+            <div class="mood-opt" data-mood="1"><div>😞</div><span class="lbl">Low</span></div>
+            <div class="mood-opt" data-mood="2"><div>😕</div><span class="lbl">Flat</span></div>
+            <div class="mood-opt" data-mood="3"><div>😐</div><span class="lbl">OK</span></div>
+            <div class="mood-opt" data-mood="4"><div>🙂</div><span class="lbl">Good</span></div>
+            <div class="mood-opt" data-mood="5"><div>😄</div><span class="lbl">Great</span></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="airway">Airway aid used</label>
+          <select id="airway">
+            <option value="none">None</option>
+            <option value="nasaltape">Nasal tape</option>
+            <option value="snoremd">SnoreMD</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="notes">Notes (grogginess, dreams, cause of waking, etc.)</label>
+          <textarea id="notes" placeholder="Anything worth remembering about last night..."></textarea>
+        </div>
+      </div>
+
+      <button class="primary" id="saveBtn">Save entry</button>
+      <p class="status-banner" id="saveStatus"></p>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="panel" id="panel-history">
+      <div class="card">
+        <h2>Your trends</h2>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-label">Avg sleep onset</div>
+            <div class="stat-value small" id="statOnset">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Avg awakenings</div>
+            <div class="stat-value small" id="statAwakenings">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Avg longest block</div>
+            <div class="stat-value small" id="statBlock">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Avg energy</div>
+            <div class="stat-value small" id="statEnergy">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Avg bedtime cones</div>
+            <div class="stat-value small" id="statBedtimeCones">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Avg redose cones</div>
+            <div class="stat-value small" id="statRedoseCones">—</div>
+          </div>
+        </div>
+        <p class="hint" id="trendHint">Based on your last 7 entries.</p>
+      </div>
+
+      <div class="card">
+        <h2>Recent entries</h2>
+        <div class="entries-list" id="entriesList">
+          <div class="empty">No entries yet — log last night to get started.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAPER PLAN -->
+    <section class="panel" id="panel-taper">
+      <div class="card">
+        <h2>Where you are</h2>
+        <div class="field">
+          <label for="currentPhase">Current phase</label>
+          <select id="currentPhase">
+            <option value="0">Phase 0 — Stabilise (wks 1-2)</option>
+            <option value="1">Phase 1 — Taper bedtime dose (wks 3-6)</option>
+            <option value="2">Phase 2 — Address the redose (wks 7-12)</option>
+            <option value="3">Phase 3 — Final taper to CBD-only (wks 13-16+)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="planStartDate">Plan start date</label>
+          <input type="date" id="planStartDate">
+        </div>
+        <button class="secondary" id="savePhaseBtn">Save</button>
+      </div>
+
+      <div id="phaseCards"></div>
+
+      <div class="card">
+        <h2>Oil/tincture troubleshooting</h2>
+        <p style="font-size:14px; color:var(--ink-soft); line-height:1.7; margin:0 0 10px;">
+          Your sous vide attempt likely underperformed due to one of three issues.
+        </p>
+        <ul style="margin:0; padding-left:18px; font-size:13px; color:var(--ink-soft); line-height:1.7;">
+          <li><strong>Decarb step:</strong> raw flower needs ~95-110°C for 60-90 min in the sealed bag before infusing, or THC stays mostly inactive.</li>
+          <li><strong>Fat ratio:</strong> THC is fat-soluble — too little fat, or a low-fat carrier oil, reduces extraction.</li>
+          <li><strong>Dose miscalculation:</strong> the oil may be working but at a much lower effective dose than 5 cones.</li>
+        </ul>
+        <p style="font-size:13px; color:var(--ink-faint); margin:10px 0 0;">
+          For now, a store-bought CBD-dominant tincture with a known concentration is more useful during the taper than fixing the homemade oil — precise dosing matters more here.
+        </p>
+      </div>
+    </section>
+
+    <!-- REFERENCE -->
+    <section class="panel" id="panel-reference">
+      <div class="card">
+        <div class="ref-section">
+          <h3>Core sleep anchors</h3>
+          <ul>
+            <li><strong>Wake time:</strong> 7:15am, every day including weekends — this is the primary anchor.</li>
+            <li><strong>Bedtime:</strong> midnight or after, occasional later nights allowed (max 1-2/week).</li>
+            <li><strong>Sunlight:</strong> get outside within 30 minutes of waking.</li>
+            <li><strong>Day after a late night:</strong> sunlight + light exercise, then return to standard schedule — don't sleep in.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3>Supplements (current)</h3>
+          <ul>
+            <li><strong>Magnesium glycinate:</strong> 300-400mg, ~1hr before bed — supports GABA pathways, helps with irritability/anxiety during taper.</li>
+            <li><strong>L-theanine:</strong> 200mg as needed if evenings feel wired — non-sedating anxiolytic.</li>
+            <li><strong>Melatonin (redose substitution):</strong> 0.5-1mg only — low doses work better for re-initiating sleep without grogginess or added tolerance.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3>Redose substitution protocol</h3>
+          <p>When waking at 2-4am, before reaching for cannabis:</p>
+          <ul>
+            <li>0.5-1mg melatonin</li>
+            <li>4-7-8 breathing or progressive muscle relaxation</li>
+            <li>Keep the room dark — no phone, no clock-watching</li>
+            <li>Only redose with cannabis if still awake after 20+ minutes</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3>Airway trial</h3>
+          <ul>
+            <li><strong>Nasal tape:</strong> trial first, track awakenings, dry mouth, morning grogginess.</li>
+            <li><strong>SnoreMD:</strong> compare separately — known issue with slipping due to front tooth anatomy.</li>
+            <li>Goal: work out how much of the awakening pattern is airway-driven vs withdrawal-driven.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3>What to expect during the taper</h3>
+          <ul>
+            <li>Sleep onset may stretch to 45-60 min on some nights during Phase 1-2 — expected and temporary.</li>
+            <li>Most cannabis-withdrawal sleep disruption resolves within 4-8 weeks, though some lingering effects can last longer.</li>
+            <li>Vivid dreams and lighter sleep in the early weeks of reduction are common (REM rebound).</li>
+            <li>Irritability and anxiety are common withdrawal symptoms — not dangerous, but worth tracking.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3>Hold steady on</h3>
+          <ul>
+            <li>Don't change cannabis dose and bedtime/wake schedule in the same week — isolate variables.</li>
+            <li>Don't panic-redose to "fix" a slow night during the taper — note it and move on.</li>
+            <li>Re-run a short sleep diary block at the end of each phase and compare to baseline.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function(){
+  var phases = [
+    {
+      num: "Phase 0", weeks: "Weeks 1-2", title: "Stabilise — don't touch cannabis yet",
+      items: [
+        "Lock in midnight bed, 7:15am wake, morning sunlight",
+        "Trial nasal tape — track awakenings, dry mouth, grogginess",
+        "Log current cannabis use precisely (bedtime + redose cones, timing)",
+        "Note what wakes you — pee, noise, just awake"
+      ]
+    },
+    {
+      num: "Phase 1", weeks: "Weeks 3-6", title: "Taper the bedtime dose, protect the redose",
+      items: [
+        "Reduce bedtime cones: 4-5 → 3 (hold ~1 week) → 2",
+        "Do not change the redose dose yet",
+        "Add CBD-dominant or 1:1 THC:CBD evening dose",
+        "Magnesium glycinate 300-400mg, ~1hr before bed",
+        "L-theanine 200mg if evenings feel wired"
+      ]
+    },
+    {
+      num: "Phase 2", weeks: "Weeks 7-12", title: "Address the redose",
+      items: [
+        "Bedtime dose down to ~1-2 cones or CBD-only",
+        "On mid-sleep waking, try melatonin 0.5-1mg + breathing before reaching for cannabis",
+        "Only redose with cannabis if awake 20+ minutes",
+        "Continue CBD-dominant evening dose as a floor",
+        "Cross-reference airway data — fixing apnoea may reduce withdrawal-driven waking"
+      ]
+    },
+    {
+      num: "Phase 3", weeks: "Weeks 13-16+", title: "Final taper to CBD-only or zero",
+      items: [
+        "Drop to CBD-only at bedtime, zero THC",
+        "Redose substitution becomes default; cannabis redose is a tracked rare rescue",
+        "Re-run a sleep diary block and compare against Phase 0 baseline"
+      ]
+    }
+  ];
+
+  var STORAGE_LOG = "sleep_entries";
+  var STORAGE_PHASE = "taper_state";
+
+  // ---- tabs ----
+  var tabBtns = document.querySelectorAll(".tab-btn");
+  var panels = document.querySelectorAll(".panel");
+  tabBtns.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      tabBtns.forEach(function(b){b.classList.remove("active");});
+      panels.forEach(function(p){p.classList.remove("active");});
+      btn.classList.add("active");
+      document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+      if(btn.dataset.tab === "history") renderHistory();
+      if(btn.dataset.tab === "taper") renderPhases();
+    });
+  });
+
+  // ---- default date ----
+  var today = new Date();
+  var dateStr = today.toISOString().slice(0,10);
+  document.getElementById("logDate").value = dateStr;
+
+  // ---- sliders ----
+  function bindSlider(id, outId, fmt){
+    var input = document.getElementById(id);
+    var out = document.getElementById(outId);
+    function update(){ out.textContent = fmt(input.value); }
+    input.addEventListener("input", update);
+    update();
+  }
+  bindSlider("doseBedtime", "doseBedtimeOut", function(v){return v;});
+  bindSlider("doseMidsleep", "doseMidsleepOut", function(v){return v;});
+  bindSlider("energy", "energyOut", function(v){return v + "%";});
+
+  // ---- mood selector ----
+  var selectedMood = null;
+  document.querySelectorAll(".mood-opt").forEach(function(opt){
+    opt.addEventListener("click", function(){
+      document.querySelectorAll(".mood-opt").forEach(function(o){o.classList.remove("selected");});
+      opt.classList.add("selected");
+      selectedMood = opt.dataset.mood;
+    });
+  });
+
+  // ---- save entry ----
+  document.getElementById("saveBtn").addEventListener("click", async function(){
+    var status = document.getElementById("saveStatus");
+    var entry = {
+      date: document.getElementById("logDate").value,
+      bedTime: document.getElementById("bedTime").value,
+      wakeTime: document.getElementById("wakeTime").value,
+      sleepOnset: document.getElementById("sleepOnset").value,
+      awakenings: document.getElementById("awakenings").value,
+      longestBlock: document.getElementById("longestBlock").value,
+      doseBedtime: document.getElementById("doseBedtime").value,
+      doseMidsleep: document.getElementById("doseMidsleep").value,
+      cbdUsed: document.getElementById("cbdUsed").value,
+      substitution: document.getElementById("substitution").value,
+      energy: document.getElementById("energy").value,
+      mood: selectedMood,
+      airway: document.getElementById("airway").value,
+      notes: document.getElementById("notes").value,
+      savedAt: new Date().toISOString()
+    };
+
+    if(!entry.date){
+      status.textContent = "Please set a date.";
+      return;
+    }
+
+    try{
+      var existing = [];
+      try{
+        var res = await window.storage.get(STORAGE_LOG, false);
+        if(res && res.value) existing = JSON.parse(res.value);
+      }catch(e){ existing = []; }
+
+      var idx = existing.findIndex(function(e){return e.date === entry.date;});
+      if(idx >= 0) existing[idx] = entry;
+      else existing.push(entry);
+
+      existing.sort(function(a,b){return a.date < b.date ? 1 : -1;});
+
+      var result = await window.storage.set(STORAGE_LOG, JSON.stringify(existing), false);
+      if(result){
+        status.textContent = "Saved for " + entry.date + ".";
+        status.style.color = "var(--accent)";
+      }else{
+        status.textContent = "Could not save — try again.";
+        status.style.color = "var(--red)";
+      }
+    }catch(e){
+      status.textContent = "Error saving entry.";
+      status.style.color = "var(--red)";
+    }
+  });
+
+  // ---- history ----
+  async function loadEntries(){
+    try{
+      var res = await window.storage.get(STORAGE_LOG, false);
+      if(res && res.value) return JSON.parse(res.value);
+    }catch(e){}
+    return [];
+  }
+
+  function fmtHours(decimal){
+    if(decimal === null || decimal === undefined || decimal === "") return "—";
+    var n = parseFloat(decimal);
+    if(isNaN(n)) return "—";
+    return n.toFixed(1) + "h";
+  }
+
+  async function renderHistory(){
+    var entries = await loadEntries();
+    var list = document.getElementById("entriesList");
+
+    if(entries.length === 0){
+      list.innerHTML = '<div class="empty">No entries yet — log last night to get started.</div>';
+    }else{
+      list.innerHTML = "";
+      entries.slice(0, 14).forEach(function(e){
+        var div = document.createElement("div");
+        div.className = "entry";
+
+        var badges = "";
+        if(e.cbdUsed === "yes") badges += '<span class="badge">CBD</span>';
+        if(e.substitution && e.substitution !== "none") badges += '<span class="badge amber">Sub used</span>';
+        if(parseFloat(e.doseMidsleep) > 0) badges += '<span class="badge red">Redose</span>';
+
+        div.innerHTML =
+          '<div class="entry-date">' + formatDate(e.date) + badges + '</div>' +
+          '<div class="entry-row"><span>Bed → wake</span><span>' + (e.bedTime || "—") + ' → ' + (e.wakeTime || "—") + '</span></div>' +
+          '<div class="entry-row"><span>Onset / awakenings</span><span>' + (e.sleepOnset || "—") + ' min / ' + (e.awakenings || "0") + '</span></div>' +
+          '<div class="entry-row"><span>Longest block</span><span>' + fmtHours(e.longestBlock) + '</span></div>' +
+          '<div class="entry-row"><span>Cones (bed / redose)</span><span>' + (e.doseBedtime || "0") + ' / ' + (e.doseMidsleep || "0") + '</span></div>' +
+          '<div class="entry-row"><span>Energy</span><span>' + (e.energy || "—") + '%</span></div>' +
+          (e.notes ? '<div class="entry-row" style="display:block; margin-top:6px; color:var(--ink-soft); font-style:italic;">' + escapeHtml(e.notes) + '</div>' : '');
+
+        list.appendChild(div);
+      });
+    }
+
+    // stats over last 7
+    var recent = entries.slice(0, 7);
+    function avg(arr, key){
+      var vals = arr.map(function(e){return parseFloat(e[key]);}).filter(function(v){return !isNaN(v);});
+      if(vals.length === 0) return null;
+      return vals.reduce(function(a,b){return a+b;},0) / vals.length;
+    }
+
+    setStat("statOnset", avg(recent, "sleepOnset"), " min");
+    setStat("statAwakenings", avg(recent, "awakenings"), "");
+    setStat("statBlock", avg(recent, "longestBlock"), "h");
+    setStat("statEnergy", avg(recent, "energy"), "%");
+    setStat("statBedtimeCones", avg(recent, "doseBedtime"), "");
+    setStat("statRedoseCones", avg(recent, "doseMidsleep"), "");
+
+    document.getElementById("trendHint").textContent =
+      entries.length === 0 ? "Log a night to start seeing trends." :
+      "Based on your last " + recent.length + " entr" + (recent.length === 1 ? "y" : "ies") + ".";
+  }
+
+  function setStat(id, val, suffix){
+    var el = document.getElementById(id);
+    if(val === null){ el.textContent = "—"; return; }
+    var rounded = Math.round(val * 10) / 10;
+    el.textContent = rounded + suffix;
+  }
+
+  function formatDate(dstr){
+    if(!dstr) return "—";
+    var d = new Date(dstr + "T00:00:00");
+    if(isNaN(d.getTime())) return dstr;
+    return d.toLocaleDateString(undefined, {weekday:"short", month:"short", day:"numeric"});
+  }
+
+  function escapeHtml(str){
+    var div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ---- taper plan ----
+  async function loadPhaseState(){
+    try{
+      var res = await window.storage.get(STORAGE_PHASE, false);
+      if(res && res.value) return JSON.parse(res.value);
+    }catch(e){}
+    return {phase: "0", startDate: ""};
+  }
+
+  document.getElementById("savePhaseBtn").addEventListener("click", async function(){
+    var state = {
+      phase: document.getElementById("currentPhase").value,
+      startDate: document.getElementById("planStartDate").value
+    };
+    try{
+      await window.storage.set(STORAGE_PHASE, JSON.stringify(state), false);
+      renderPhases();
+    }catch(e){}
+  });
+
+  async function renderPhases(){
+    var state = await loadPhaseState();
+    document.getElementById("currentPhase").value = state.phase || "0";
+    document.getElementById("planStartDate").value = state.startDate || "";
+
+    var container = document.getElementById("phaseCards");
+    container.innerHTML = "";
+    phases.forEach(function(p, i){
+      var isCurrent = String(i) === String(state.phase);
+      var div = document.createElement("div");
+      div.className = "phase-card" + (isCurrent ? " current" : "");
+      div.innerHTML =
+        '<div class="phase-num">' + p.num + (isCurrent ? " · current" : "") + '</div>' +
+        '<div class="weeks">' + p.weeks + '</div>' +
+        '<h3>' + p.title + '</h3>' +
+        '<ul>' + p.items.map(function(item){return '<li>' + item + '</li>';}).join("") + '</ul>';
+      container.appendChild(div);
+    });
+  }
+
+  // initial render
+  renderPhases();
+})();
+</script>
+</body>
+</html>
