@@ -480,14 +480,14 @@ clip:rect(0,0,0,0);
 <div class="field">
 <label for="doseBedtime">Cones before bed</label>
 <div class="slider-row">
-<input type="range" id="doseBedtime" min="0" max="10" step="0.5" value="4">
+<input type="range" id="doseBedtime" min="0" max="6" step="0.5" value="4">
 <span class="slider-out" id="doseBedtimeOut">4</span>
 </div>
 </div>
 <div class="field">
 <label for="doseMidsleep">Cones at mid-sleep wake</label>
 <div class="slider-row">
-<input type="range" id="doseMidsleep" min="0" max="10" step="0.5" value="0">
+<input type="range" id="doseMidsleep" min="0" max="6" step="0.5" value="0">
 <span class="slider-out" id="doseMidsleepOut">0</span>
 </div>
 <p class="hint">Set to 0 on nights with no redose.</p>
@@ -934,6 +934,35 @@ container.appendChild(div);
 
 // initial render
 renderPhases();
+renderHistory();
+
+// Pre-populate log form from widget data if available
+(function prefillFromWidget(){
+try{
+var raw = localStorage.getItem('widget_state');
+if(!raw) return;
+var ws = JSON.parse(raw);
+var today = new Date().toISOString().slice(0,10);
+if(ws.date !== today) return;
+if(ws.sleepTime){
+var d = new Date(ws.sleepTime);
+document.getElementById('bedTime').value = d.toTimeString().slice(0,5);
+}
+if(ws.wakeTime){
+var d2 = new Date(ws.wakeTime);
+document.getElementById('wakeTime').value = d2.toTimeString().slice(0,5);
+}
+if(ws.cones){
+document.getElementById('doseBedtime').value = ws.cones;
+document.getElementById('doseBedtimeOut').textContent = ws.cones;
+}
+}catch(e){}
+})();
+
+// Re-render history if widget updates localStorage
+window.addEventListener('storage', function(e){
+if(e.key === 'sleep_entries') renderHistory();
+});
 })();
 </script>
 </body>
