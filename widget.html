@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Sleep Widget</title>
+<style>
+  :root {
+    --bg: #1B1A17;
+    --surface: #262420;
+    --ink: #F1EFE8;
+    --ink-soft: #B4B2A9;
+    --line: #3A372F;
+    --accent: #5DCAA5;
+    --accent-soft: #04342C;
+    --amber: #FAC775;
+    --moon: #7B9FD4;
+    --sun: #FAC775;
+    --radius: 20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  .widget {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px 20px 20px;
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .widget-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .date-label {
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  /* Sleep/Wake row */
+  .sleep-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .sleep-btn {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--bg);
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+  }
+
+  .sleep-btn:active { transform: scale(0.96); }
+
+  .sleep-btn.active-moon {
+    border-color: var(--moon);
+    background: rgba(123, 159, 212, 0.1);
+  }
+
+  .sleep-btn.active-sun {
+    border-color: var(--sun);
+    background: rgba(250, 199, 117, 0.1);
+  }
+
+  .sleep-btn .icon {
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  .sleep-btn .btn-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+  }
+
+  .sleep-btn .time-stamp {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    min-height: 18px;
+  }
+
+  /* Cone counter */
+  .cone-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cone-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .cone-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .cone-reset {
+    font-size: 11px;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-family: inherit;
+  }
+
+  .cone-reset:hover { color: var(--ink); }
+
+  .cone-btn {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--bg);
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    gap: 12px;
+  }
+
+  .cone-btn:active { transform: scale(0.97); }
+
+  .cone-btn.just-pressed {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .cone-icon {
+    font-size: 36px;
+    line-height: 1;
+    transition: all 0.2s ease;
+    min-width: 44px;
+    text-align: center;
+  }
+
+  .cone-count-area {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .cone-count {
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cone-sublabel {
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Pip dots showing count */
+  .pip-row {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .pip {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--line);
+    transition: background 0.15s;
+  }
+
+  .pip.filled {
+    background: var(--accent);
+  }
+
+  /* Footer link */
+  .footer {
+    text-align: center;
+  }
+
+  .tracker-link {
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 8px 16px;
+    border: 1px solid var(--accent-soft);
+    border-radius: 99px;
+    display: inline-block;
+    transition: all 0.15s;
+  }
+
+  .tracker-link:hover {
+    background: var(--accent-soft);
+  }
+
+  /* Pulse animation on tap */
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+
+  .pulse { animation: pulse 0.2s ease; }
+</style>
+</head>
+<body>
+<div class="widget">
+
+  <div class="widget-header">
+    <span class="widget-title">Night log</span>
+    <span class="date-label" id="dateLabel"></span>
+  </div>
+
+  <!-- Sleep / Wake buttons -->
+  <div class="sleep-row">
+    <button class="sleep-btn" id="sleepBtn" onclick="logSleep()">
+      <span class="icon">🌙</span>
+      <span class="btn-label">Sleep</span>
+      <span class="time-stamp" id="sleepTime">—</span>
+    </button>
+    <button class="sleep-btn" id="wakeBtn" onclick="logWake()">
+      <span class="icon">☀️</span>
+      <span class="btn-label">Wake</span>
+      <span class="time-stamp" id="wakeTime">—</span>
+    </button>
+  </div>
+
+  <!-- Cone counter -->
+  <div class="cone-section">
+    <div class="cone-label-row">
+      <span class="cone-label"></span>
+      <button class="cone-reset" onclick="resetCones()">Reset</button>
+    </div>
+
+    <button class="cone-btn" id="coneBtn" onclick="addCone()">
+      <span class="cone-icon" id="coneIcon">🌿</span>
+      <div class="cone-count-area">
+        <span class="cone-count" id="coneCount">0</span>
+
+      </div>
+    </button>
+
+    <div class="pip-row" id="pipRow"></div>
+  </div>
+
+
+
+</div>
+
+<script>
+  var STORAGE_KEY = 'widget_state';
+  var MAX_PIPS = 10;
+
+  function todayStr() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var s = JSON.parse(raw);
+        // Reset if it's a new day
+        if (s.date !== todayStr()) {
+          return { date: todayStr(), cones: 0, sleepTime: null, wakeTime: null };
+        }
+        return s;
+      }
+    } catch(e) {}
+    return { date: todayStr(), cones: 0, sleepTime: null, wakeTime: null };
+  }
+
+  function saveState(state) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch(e) {}
+  }
+
+  function fmt(timeStr) {
+    if (!timeStr) return '—';
+    // timeStr is ISO string
+    var d = new Date(timeStr);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function renderPips(count) {
+    var row = document.getElementById('pipRow');
+    row.innerHTML = '';
+    for (var i = 0; i < MAX_PIPS; i++) {
+      var pip = document.createElement('div');
+      pip.className = 'pip' + (i < count ? ' filled' : '');
+      row.appendChild(pip);
+    }
+  }
+
+  function render(state) {
+    // Date
+    var d = new Date();
+    document.getElementById('dateLabel').textContent = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+
+    // Cone count
+    document.getElementById('coneCount').textContent = state.cones;
+    renderPips(Math.min(state.cones, MAX_PIPS));
+
+    // Cone icon — cactus if > 0, leaf if 0
+    document.getElementById('coneIcon').textContent = state.cones > 0 ? '🌵' : '🌿';
+
+    // Sleep/wake times
+    document.getElementById('sleepTime').textContent = fmt(state.sleepTime);
+    document.getElementById('wakeTime').textContent = fmt(state.wakeTime);
+
+    // Active states
+    var sleepBtn = document.getElementById('sleepBtn');
+    var wakeBtn = document.getElementById('wakeBtn');
+    sleepBtn.classList.toggle('active-moon', !!state.sleepTime);
+    wakeBtn.classList.toggle('active-sun', !!state.wakeTime);
+  }
+
+  function addCone() {
+    var state = loadState();
+    state.cones = Math.min(state.cones + 1, 10);
+    saveState(state);
+
+    // Also write to sleep_entries so full tracker can use it
+    syncToTracker(state);
+
+    // Animation
+    var icon = document.getElementById('coneIcon');
+    icon.classList.remove('pulse');
+    void icon.offsetWidth;
+    icon.classList.add('pulse');
+
+    var btn = document.getElementById('coneBtn');
+    btn.classList.add('just-pressed');
+    setTimeout(function() { btn.classList.remove('just-pressed'); }, 300);
+
+    render(state);
+  }
+
+  function resetCones() {
+    var state = loadState();
+    state.cones = 0;
+    saveState(state);
+    render(state);
+  }
+
+  function logSleep() {
+    var state = loadState();
+    state.sleepTime = new Date().toISOString();
+    saveState(state);
+    syncToTracker(state);
+    render(state);
+  }
+
+  function logWake() {
+    var state = loadState();
+    state.wakeTime = new Date().toISOString();
+    saveState(state);
+    syncToTracker(state);
+    render(state);
+  }
+
+  function syncToTracker(state) {
+    // Write partial entry to sleep_entries so the full tracker picks it up
+    try {
+      var raw = localStorage.getItem('sleep_entries');
+      var entries = raw ? JSON.parse(raw) : [];
+      var today = todayStr();
+      var idx = entries.findIndex(function(e) { return e.date === today; });
+      var entry = idx >= 0 ? entries[idx] : { date: today };
+
+      if (state.sleepTime) {
+        var d = new Date(state.sleepTime);
+        entry.bedTime = d.toTimeString().slice(0, 5);
+      }
+      if (state.wakeTime) {
+        var d2 = new Date(state.wakeTime);
+        entry.wakeTime = d2.toTimeString().slice(0, 5);
+      }
+      if (state.cones !== undefined) {
+        entry.doseBedtime = String(state.cones);
+      }
+
+      if (idx >= 0) entries[idx] = entry;
+      else entries.unshift(entry);
+
+      localStorage.setItem('sleep_entries', JSON.stringify(entries));
+    } catch(e) {}
+  }
+
+  // Init
+  var state = loadState();
+  render(state);
+</script>
+</body>
+</html>
