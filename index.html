@@ -937,7 +937,7 @@ renderPhases();
 renderHistory();
 
 // Pre-populate log form from widget data if available
-(function prefillFromWidget(){
+function prefillFromWidget(){
 try{
 var raw = localStorage.getItem('widget_state');
 if(!raw) return;
@@ -957,7 +957,16 @@ document.getElementById('doseBedtime').value = ws.cones;
 document.getElementById('doseBedtimeOut').textContent = ws.cones;
 }
 }catch(e){}
-})();
+}
+
+// Run on load and again after 3 seconds to catch delayed injection
+prefillFromWidget();
+setTimeout(prefillFromWidget, 3000);
+
+// Also run when page becomes visible again
+document.addEventListener('visibilitychange', function(){
+if(!document.hidden) prefillFromWidget();
+});
 
 // Re-render history if widget updates localStorage
 window.addEventListener('storage', function(e){
